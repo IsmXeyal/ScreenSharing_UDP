@@ -4,7 +4,6 @@ using Client.Views;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -22,6 +21,8 @@ public class MainViewModel : NotificationService
     private readonly int clientPort;
     private readonly IPEndPoint remoteEP;
     private bool isStart = false;
+    private bool isFirst = true;
+    private bool isStop = false;
 
     public MainViewModel(MainView mainView)
     {
@@ -46,6 +47,7 @@ public class MainViewModel : NotificationService
                 {
                     isStart = false;
                     UpdateButtonUI("Start", new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF035203")));
+                    isStop = true;
                 }
             },
             pre => true);
@@ -53,11 +55,8 @@ public class MainViewModel : NotificationService
 
     private void UpdateButtonUI(string content, Brush background)
     {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            MainView!.mybtn.Content = content;
-            MainView.mybtn.Background = background;
-        });
+        MainView!.mybtn.Content = content;
+        MainView.mybtn.Background = background;
     }
 
     private async Task StartReceivingImages()
@@ -66,19 +65,29 @@ public class MainViewModel : NotificationService
         var len = 0;
         var buffer = new byte[maxLen];
 
-        await client.SendAsync(buffer, buffer.Length, remoteEP);
-
+        // Client bir defe connect olsun
+        if(isFirst)
+        {
+            await client.SendAsync(buffer, buffer.Length, remoteEP);
+            isFirst = false;
+        }
+        
         var myImage = new List<byte>();
         try
         {
             while (true)
             {
+                if (isStop)
+                {
+                    // Server Ekrani helede screen edir, sadece client tutmur.
+                    isStop = false;
+                    break;
+                }
                 do
                 {
                     try
                     {
                         var result = await client.ReceiveAsync();
-
                         buffer = result.Buffer;
                         len = buffer.Length;
                         myImage.AddRange(buffer);
@@ -106,12 +115,12 @@ public class MainViewModel : NotificationService
     private static async Task<BitmapImage?> ByteToImageAsync(byte[]? imageData)
     {
         var image = new BitmapImage();
-
         image.BeginInit();
         image.StreamSource = new MemoryStream(imageData!);
         image.CacheOption = BitmapCacheOption.OnLoad;
         image.EndInit();
 
+        await Task.Delay(1);
         return image;
     }
 }

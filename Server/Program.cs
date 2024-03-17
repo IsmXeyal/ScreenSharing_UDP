@@ -64,14 +64,17 @@ public class Program
             // Ekran screen olunub bitmap-in icine yuklenir.
             Bitmap? bitmap = new Bitmap(width: 1920, height: 1080);
 
-            // Ekranin screen olunmasi
-            using Graphics graphics = Graphics.FromImage(bitmap);
+            await Task.Run(() =>
+            {
+                // Ekranin screen olunmasi
+                using Graphics graphics = Graphics.FromImage(bitmap);
 
-            //Ekran screen olunanda hardan basliyacaq
-            // Ilk ikisi ekrani hardan screen etdiyini
-            // 3 ve 4 ise bitmap-in icinde hardan yazacagini deyir ve en sonuncu ise hara qeder oldugunu deyir.
-            graphics.CopyFromScreen(0, 0, 0, 0, bitmap.Size);
-
+                //Ekran screen olunanda hardan basliyacaq
+                // Ilk ikisi ekrani hardan screen etdiyini
+                // 3 ve 4 ise bitmap-in icinde hardan yazacagini deyir ve en sonuncu ise hara qeder oldugunu deyir.
+                graphics.CopyFromScreen(0, 0, 0, 0, bitmap.Size);
+            });
+            
             return bitmap;
         }
         catch (Exception ex)
