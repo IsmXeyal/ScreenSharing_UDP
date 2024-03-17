@@ -8,6 +8,7 @@ namespace Server;
 
 public class Program
 {
+    private static List<UdpClient> activeClients = new List<UdpClient>();
     public static async Task Main()
     {
         var ip = IPAddress.Parse("127.0.0.1");
@@ -25,6 +26,10 @@ public class Program
             // client firstly client must send us request.
             var result = await listener.ReceiveAsync();
             Console.WriteLine($"{result.RemoteEndPoint} was Connected...");
+
+            var clientEP = result.RemoteEndPoint;
+            var client = new UdpClient();
+            activeClients.Add(client);
 
             // Each client must be in seperate thread that they couldn't create obstacle for each other.
             _ = Task.Run( async () =>
@@ -49,7 +54,15 @@ public class Program
 
                         foreach (var chunk in chunks)
                         {
-                            await listener.SendAsync(chunk, chunk.Length, clientEP);
+                            try
+                            {
+                                await client.SendAsync(chunk, chunk.Length, clientEP);
+                            }
+                            catch (SocketException)
+                            {
+                                activeClients.Remove(client);
+                                break;
+                            }
                         }
                     }
                 }
